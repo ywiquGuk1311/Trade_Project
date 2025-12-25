@@ -1,0 +1,227 @@
+﻿@model List<Trade.product>
+
+@{
+    ViewBag.Title = "Список товаров";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Trade - Список товаров</title>
+
+    <link rel="icon" href="/Content/Images/Icon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/Content/Images/Icon.ico" type="image/x-icon">
+
+    <style>
+        body {
+            font-family: 'Times New Roman', serif;
+            background-color: #FFFFFF;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header, .footer {
+            background-color: #7FFF00;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            height: 60px;
+            width: auto;
+            margin-right: 20px;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .product-card {
+            border: 2px solid black;
+            margin-bottom: 15px;
+            display: flex;
+            background-color: white;
+            min-height: 150px;
+        }
+
+        .highlight-discount {
+            background-color: #2E8B57;
+        }
+
+        .gray-bg {
+            background-color: #808080;
+        }
+
+        .col-photo {
+            width: 150px;
+            border-right: 2px solid black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .product-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .col-info {
+            flex-grow: 1;
+            border-right: 2px solid black;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            line-height: 1.5;
+        }
+
+        .col-discount {
+            width: 150px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .old-price {
+            text-decoration: line-through;
+            color: gray;
+            margin-right: 10px;
+        }
+
+        .new-price {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div style="display:flex; align-items:center;">
+            <img src="/Content/Images/Icon.png" alt="Logo" class="logo" />
+            <h1>Список товаров</h1>
+        </div>
+
+        <div style="background-color: #f0f0f0; padding: 15px; border-bottom: 1px solid gray; margin-left: 20px;">
+            <form method="get" action="@Url.Action("Index", "Home")" style="max-width: 1000px; margin: 0 auto;">
+                <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
+
+                    <div>
+                        <label>Поиск:</label><br />
+                        <input type="text" name="searchString" placeholder="Введите..." value="@Request.QueryString["searchString"]" />
+                    </div>
+
+                    <div>
+                        <label>Производитель:</label><br />
+                        <select name="manufacturerId" style="width: 150px;">
+                            <option value="0">Все</option>
+                            <option value="1" @(Request.QueryString["manufacturerId"] == "1" ? "selected" : "")>Alessio Nesca</option>
+                            <option value="2" @(Request.QueryString["manufacturerId"] == "2" ? "selected" : "")>CROSBY</option>
+                            <option value="3" @(Request.QueryString["manufacturerId"] == "3" ? "selected" : "")>Kari</option>
+                            <option value="4" @(Request.QueryString["manufacturerId"] == "4" ? "selected" : "")>Marco Tozzi</option>
+                            <option value="5" @(Request.QueryString["manufacturerId"] == "5" ? "selected" : "")>Rieker</option>
+                            <option value="6" @(Request.QueryString["manufacturerId"] == "6" ? "selected" : "")>Рос</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label>Цена до:</label><br />
+                        <input type="number" name="maxPrice" step="0.01" style="width: 80px;" value="@Request.QueryString["maxPrice"]" />
+                    </div>
+
+                    <div style="display: flex; flex-direction: column;">
+                        <label><input type="checkbox" name="onlyDiscount" value="true" @(Request.QueryString["onlyDiscount"] == "true" ? "checked" : "") /> Скидка</label>
+                        <label><input type="checkbox" name="inStock" value="true" @(Request.QueryString["inStock"] == "true" ? "checked" : "") /> На складе</label>
+                    </div>
+
+                    <div>
+                        <label>Сортировка:</label><br />
+                        <select name="sortOrder">
+                            <option value="name_asc">По названию</option>
+                            <option value="supplier_asc">По поставщику</option>
+                            <option value="price_asc">По цене (возр.)</option>
+                            <option value="price_desc">По цене (убыв.)</option>
+                        </select>
+                    </div>
+
+                    <div><br /><button type="submit" style="background-color: #00FA9A; border: none; padding: 5px 15px; cursor: pointer;">Найти</button></div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">
+        @if (Model != null)
+        {
+            foreach (var p in Model)
+            {
+                // Логика расчета цен
+                decimal cost = p.ProductCost;
+                decimal discount = (decimal?)p.ProductDiscountAmount ?? 0;
+                int qty = p.ProductQuantityInStock; // Берем напрямую из модели
+                decimal newPrice = discount > 0 ? cost - (cost * discount / 100) : cost;
+
+                // Стили
+                string bgClass = "";
+                if (discount > 15) { bgClass = "highlight-discount"; }
+                string img = string.IsNullOrEmpty(p.ProductPhoto) ? "picture.png" : p.ProductPhoto;
+
+                <div class="product-card @bgClass">
+                    <div class="col-photo">
+                        <img src="/Content/Images/@img" class="product-image" onerror="this.src='/Content/Images/picture.png'" />
+                    </div>
+
+                    <div class="col-info">
+                        <div style="font-weight: bold; font-size: 1.1em; margin-bottom: 5px;">
+                            @(p.productcategory1?.CategoryName ?? "Категория не указана") | @p.ProductName
+                        </div>
+
+                        <div>Описание: @p.ProductDescription</div>
+
+                        <div>Производитель: @(p.productmanufacturer1?.ManufacturerName ?? "Не указан")</div>
+                        <div>Поставщик: @(p.productsupplier1?.SupplierName ?? "Не указан")</div>
+
+                        <div>
+                            Цена:
+                            @if (discount > 0)
+                            {
+                                <span class="old-price">@cost.ToString("N2")</span>
+                            }
+                            <span class="new-price">@newPrice.ToString("N2") Р</span>
+                        </div>
+
+                        <div>Единица: @(p.unittype?.UnitName ?? "шт.")</div>
+                        <div>На складе: @qty</div>
+                    </div>
+
+                    <div class="col-discount">
+                        @if (discount > 0)
+                        {
+                            <div>Скидка:</div>
+                            <div style="font-size: 20px; font-weight: bold;">@discount.ToString("0") %</div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <p>Загрузка данных...</p>
+        }
+    </div>
+
+    <div class="footer">
+        <span>Выведено товаров: @(Model != null ? Model.Count : 0)</span>
+    </div>
+
+</body>
+</html>
